@@ -1,32 +1,32 @@
+import optuna
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import cross_val_score
 
-def train_logistic_regression_model_with_grid_search(X_train, y_train):
-    # Definiowanie przestrzeni przeszukiwania hiperparametrów
-    param_grid = {
-        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],  # Różne wartości hiperparametru C
-        'solver': ['liblinear', 'lbfgs'],  # Algorytmy optymalizacji
-        'penalty': ['l1', 'l2']  # Rodzaje kar
-    }
+def optimize_logistic_regression_with_optuna(X_train, y_train):
+    # Funkcja celu dla Optuna
+    def objective(trial):
+        # Przestrzeń hiperparametrów
+        C = trial.suggest_loguniform('C', 1e-4, 1e2)  # C z przedziału log-uniform
+        solver = trial.suggest_categorical('solver', ['liblinear', 'lbfgs'])
+        penalty = 'l2' if solver == 'lbfgs' else trial.suggest_categorical('penalty', ['l1', 'l2'])
+        
+        # Inicjalizacja modelu Logistic Regression
+        model = LogisticRegression(C=C, solver=solver, penalty=penalty, random_state=42, max_iter=1000)
 
-    # Inicjalizacja modelu Logistic Regression
-    model = LogisticRegression(random_state=42, max_iter=1000)
+        # Ocena modelu za pomocą walidacji krzyżowej
+        auc = cross_val_score(model, X_train, y_train, cv=5, scoring='roc_auc').mean()
+        return auc
 
-    # GridSearchCV do optymalizacji hiperparametrów
-    grid_search = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=5,  # Walidacja krzyżowa
-        scoring='roc_auc',  # Metryka optymalizacji
-        n_jobs=-1
-    )
+    # Tworzenie i optymalizacja badania Optuna
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=50, n_jobs=-1)
 
-    # Trening modelu z GridSearchCV
-    grid_search.fit(X_train, y_train)
+    # Wyciąganie najlepszych hiperparametrów
+    best_params = study.best_params
 
-    # Zwracanie najlepszego modelu i parametrów
-    best_model = grid_search.best_estimator_
-    best_params = grid_search.best_params_
+    # Tworzenie najlepszego modelu na podstawie znalezionych parametrów
+    best_model = LogisticRegression(**best_params, random_state=42, max_iter=1000)
+    best_model.fit(X_train, y_train)
 
     return best_model, best_params
