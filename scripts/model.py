@@ -1,42 +1,49 @@
+import optuna
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE
+from sklearn.metrics import roc_auc_score
 
-def train_random_forest_model(X, y):
-    # Zastosowanie SMOTE do zbalansowania klas
-    smote = SMOTE(random_state=42)
-    X_res, y_res = smote.fit_resample(X, y)
-    
-    # Podział danych na zbiór treningowy i testowy
-    X_train, X_test, y_train, y_test = train_test_split(X_res, y_res, test_size=0.2, random_state=42, stratify=y_res)
+def train_random_forest_model_with_optuna(X_train, y_train):
+    # Funkcja celu dla Optuna
+    def objective(trial):
+        # Definiowanie przestrzeni poszukiwania dla hiperparametrów
+        n_estimators = trial.suggest_int('n_estimators', 50, 1000)
+        max_depth = trial.suggest_int('max_depth', 10, 50)
+        min_samples_split = trial.suggest_int('min_samples_split', 2, 20)
+        min_samples_leaf = trial.suggest_int('min_samples_leaf', 1, 10)
+        bootstrap = trial.suggest_categorical('bootstrap', [True, False])
 
-    # Skalowanie danych
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+        # Inicjalizacja modelu Random Forest
+        model = RandomForestClassifier(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            bootstrap=bootstrap,
+            random_state=42
+        )
 
-    # Trening modelu Random Forest
-    model = RandomForestClassifier(random_state=42)
-    model.fit(X_train, y_train)
-    
-    return model, X_train, X_test, y_train, y_test
+        # Trening modelu
+        model.fit(X_train, y_train)
+        # Obliczenie metryki AUC na zbiorze treningowym
+        auc = roc_auc_score(y_train, model.predict_proba(X_train)[:, 1])
+        return auc
 
-def optimize_random_forest_model(model, X_train, y_train):
-    # Definiowanie siatki parametrów do przeszukiwania dla GridSearchCV
-    param_grid = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [None, 10, 20, 30],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
-        'bootstrap': [True, False]
-    }
+    # Tworzenie obiektu study i optymalizacja
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=50, n_jobs=-1, timeout=600)
 
-    # Inicjalizacja GridSearchCV
-    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1, verbose=0, scoring='roc_auc')
-
-    # Trening modelu z GridSearchCV
-    grid_search.fit(X_train, y_train)
+    # Pobranie najlepszego zestawu hiperparametrów i stworzenie modelu
+    best_params = study.best_params
+    best_model = RandomForestClassifier(
+        n_estimators=best_params['n_estimators'],
+        max_depth=best_params['max_depth'],
+        min_samples_split=best_params['min_samples_split'],
+        min_samples_leaf=best_params['min_samples_leaf'],
+        bootstrap=best_params['bootstrap'],
+        random_state=42
+    )
+    # Trening najlepszego modelu
+    best_model.fit(X_train, y_train)
 
     # Zwrócenie najlepszego modelu i parametrów
-    return grid_search.best_estimator_, grid_search.best_params_
+    return best_model, best_params
