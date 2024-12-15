@@ -1,35 +1,37 @@
+import optuna
 from xgboost import XGBClassifier
-from sklearn.model_selection import GridSearchCV
-import numpy as np
+from sklearn.metrics import roc_auc_score
 
-def optimize_xgboost_with_grid_search(X_train, y_train):
-    # Definiowanie przestrzeni hiperparametrów dla GridSearchCV
-    param_grid = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [3, 5, 7],
-        'learning_rate': [0.01, 0.1, 0.2],
-        'subsample': [0.8, 0.9, 1.0],
-        'colsample_bytree': [0.8, 0.9, 1.0]
-    }
+def optimize_xgboost_with_optuna(X_train, y_train):
+    def objective(trial):
+        # Definicja przestrzeni hiperparametrów dla Optuna
+        params = {
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=50),
+            'max_depth': trial.suggest_int('max_depth', 3, 10),
+            'learning_rate': trial.suggest_loguniform('learning_rate', 0.01, 0.3),
+            'subsample': trial.suggest_float('subsample', 0.6, 1.0, step=0.1),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0, step=0.1)
+        }
 
-    # Inicjalizacja modelu XGBoost
-    model = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss')
+        # Inicjalizacja modelu XGBoost
+        model = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss', **params)
 
-    # GridSearchCV dla optymalizacji hiperparametrów
-    grid_search = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=5,
-        n_jobs=-1,
-        verbose=0,
-        scoring='roc_auc'
-    )
+        # Trening modelu
+        model.fit(X_train, y_train)
 
-    # Trening modelu z GridSearchCV
-    grid_search.fit(X_train, y_train)
+        # Obliczanie metryki AUC na zbiorze treningowym
+        y_pred_proba = model.predict_proba(X_train)[:, 1]
+        auc = roc_auc_score(y_train, y_pred_proba)
+
+        return auc
+
+    # Tworzenie studium optymalizacyjnego
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=50, n_jobs=-1)
 
     # Wyciąganie najlepszego modelu i parametrów
-    best_model = grid_search.best_estimator_
-    best_params = grid_search.best_params_
+    best_params = study.best_params
+    best_model = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss', **best_params)
+    best_model.fit(X_train, y_train)
 
     return best_model, best_params
