@@ -1,17 +1,19 @@
-from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
 from sklearn.model_selection import GridSearchCV
 import numpy as np
 
-def optimize_logistic_regression_with_grid_search(X_train, y_train):
+def optimize_xgboost_with_grid_search(X_train, y_train):
     # Definiowanie przestrzeni hiperparametrów dla GridSearchCV
     param_grid = {
-        'C': np.logspace(-4, 4, 20),  # Parametr regularyzacyjny C
-        'solver': ['liblinear', 'lbfgs'],  # Różne algorytmy optymalizacji
-        'penalty': ['l2']  # Tylko l2 dla 'lbfgs', 'liblinear' może obsługiwać 'l1'
+        'n_estimators': [100, 200, 300],
+        'max_depth': [3, 5, 7],
+        'learning_rate': [0.01, 0.1, 0.2],
+        'subsample': [0.8, 0.9, 1.0],
+        'colsample_bytree': [0.8, 0.9, 1.0]
     }
 
-    # Inicjalizacja modelu Logistic Regression
-    model = LogisticRegression(random_state=42, max_iter=1000)
+    # Inicjalizacja modelu XGBoost
+    model = XGBClassifier(random_state=42, use_label_encoder=False, eval_metric='logloss')
 
     # GridSearchCV dla optymalizacji hiperparametrów
     grid_search = GridSearchCV(
