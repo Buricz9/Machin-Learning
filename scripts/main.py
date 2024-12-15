@@ -3,7 +3,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from preprocessing import preprocess_data, prepare_data
-from model import train_random_forest_model_with_optuna
+from model import train_svm_model_with_randomized_search
 from evaluation import evaluate_model, report_metrics, plot_confusion_matrix, plot_roc_curve
 
 # Ścieżka do pliku z danymi
@@ -13,8 +13,8 @@ data_path = 'data/KAMC_COVID-19.csv'
 X, y = preprocess_data(data_path)
 X_train, X_test, y_train, y_test = prepare_data(X, y)
 
-# 2. Trening i optymalizacja modelu Random Forest z Optuna
-best_model, best_params = train_random_forest_model_with_optuna(X_train, y_train)
+# 2. Trening i optymalizacja modelu SVM z RandomizedSearchCV
+best_model, best_params = train_svm_model_with_randomized_search(X_train, y_train)
 print(f"Best parameters found: {best_params}")
 
 # 3. Ewaluacja modelu
