@@ -1,27 +1,35 @@
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+import numpy as np
 
-def optimize_logistic_regression_with_grid_search(X_train, y_train):
-    # Zmieniamy param_grid, aby użyć dyskretnych wartości C zamiast logspace
-    param_grid = {
-        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
-        'solver': ['liblinear', 'lbfgs'],
-        'penalty': ['l2']
+def optimize_logistic_regression_with_randomsearch(X_train, y_train):
+    # Definiowanie przestrzeni hiperparametrów
+    param_dist = {
+        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],  # Dyskretne wartości C
+        'solver': ['liblinear', 'lbfgs'],  # Metody optymalizacji
+        'penalty': ['l2']  # Regularizacja l2
     }
 
+    # Inicjalizacja modelu Logistic Regression
     model = LogisticRegression(random_state=42, max_iter=1000)
 
-    grid_search = GridSearchCV(
+    # RandomizedSearchCV dla optymalizacji hiperparametrów
+    random_search = RandomizedSearchCV(
         estimator=model,
-        param_grid=param_grid,
+        param_distributions=param_dist,
+        n_iter=10,  # Liczba iteracji – można dostosować
         cv=5,
         n_jobs=-1,
         verbose=0,
+        random_state=42,
         scoring='roc_auc'
     )
 
-    grid_search.fit(X_train, y_train)
-    best_model = grid_search.best_estimator_
-    best_params = grid_search.best_params_
+    # Trening modelu z RandomizedSearchCV
+    random_search.fit(X_train, y_train)
+
+    # Wyciąganie najlepszego modelu i parametrów
+    best_model = random_search.best_estimator_
+    best_params = random_search.best_params_
 
     return best_model, best_params
