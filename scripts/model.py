@@ -1,6 +1,5 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-import numpy as np
 
 def train_random_forest_model(X_train, y_train):
     # Inicjalizacja modelu Random Forest
@@ -16,7 +15,14 @@ def train_random_forest_model(X_train, y_train):
     }
 
     # Inicjalizacja GridSearchCV
-    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, n_jobs=-1, verbose=0, scoring='roc_auc')
+    grid_search = GridSearchCV(
+        estimator=model, 
+        param_grid=param_grid, 
+        cv=5, 
+        n_jobs=-1, 
+        verbose=0, 
+        scoring='roc_auc'
+    )
 
     # Trening modelu z GridSearchCV
     grid_search.fit(X_train, y_train)
