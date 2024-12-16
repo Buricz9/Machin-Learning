@@ -13,7 +13,7 @@ data_path = 'data/KAMC_COVID-19.csv'
 X, y = preprocess_data(data_path)
 X_train, X_test, y_train, y_test = prepare_data(X, y)
 
-# 2. Trening i optymalizacja modelu Random Forest
+# 2. Trening i optymalizacja modelu Random Forest z GridSearchCV
 best_model, best_params = train_random_forest_model(X_train, y_train)
 print(f"Best parameters found: {best_params}")
 
