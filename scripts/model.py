@@ -1,19 +1,16 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-import numpy as np
 
 def optimize_logistic_regression_with_grid_search(X_train, y_train):
-    # Definiowanie przestrzeni hiperparametrów dla GridSearchCV
+    # Zmieniamy param_grid, aby użyć dyskretnych wartości C zamiast logspace
     param_grid = {
-        'C': np.logspace(-4, 4, 20),  # Parametr regularyzacyjny C
-        'solver': ['liblinear', 'lbfgs'],  # Różne algorytmy optymalizacji
-        'penalty': ['l2']  # Tylko l2 dla 'lbfgs', 'liblinear' może obsługiwać 'l1'
+        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+        'solver': ['liblinear', 'lbfgs'],
+        'penalty': ['l2']
     }
 
-    # Inicjalizacja modelu Logistic Regression
     model = LogisticRegression(random_state=42, max_iter=1000)
 
-    # GridSearchCV dla optymalizacji hiperparametrów
     grid_search = GridSearchCV(
         estimator=model,
         param_grid=param_grid,
@@ -23,10 +20,7 @@ def optimize_logistic_regression_with_grid_search(X_train, y_train):
         scoring='roc_auc'
     )
 
-    # Trening modelu z GridSearchCV
     grid_search.fit(X_train, y_train)
-
-    # Wyciąganie najlepszego modelu i parametrów
     best_model = grid_search.best_estimator_
     best_params = grid_search.best_params_
 
