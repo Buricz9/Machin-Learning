@@ -13,16 +13,21 @@ def preprocess_data(path):
     return X, y
 
 def prepare_data(X, y):
-    # Zastosowanie SMOTE do zbalansowania klas
-    smote = SMOTE(random_state=42)
-    X_res, y_res = smote.fit_resample(X, y)
+    # Najpierw dzielimy dane na zbiory treningowy i testowy
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, 
+        test_size=0.2, 
+        random_state=42, 
+        stratify=y
+    )
 
-    # Podział danych na zbiór treningowy i testowy
-    X_train, X_test, y_train, y_test = train_test_split(X_res, y_res, test_size=0.2, random_state=42, stratify=y_res)
+    # Teraz stosujemy SMOTE tylko na zbiorze treningowym
+    smote = SMOTE(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 
     # Skalowanie danych
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
+    X_train_res = scaler.fit_transform(X_train_res)
     X_test = scaler.transform(X_test)
 
-    return X_train, X_test, y_train, y_test
+    return X_train_res, X_test, y_train_res, y_test
