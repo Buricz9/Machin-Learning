@@ -4,7 +4,7 @@ from lightgbm import LGBMClassifier
 def optimize_lightgbm_with_grid_search(X_train, y_train):
     # Definicja przestrzeni hiperparametrów dla GridSearchCV
     param_grid = {
-        'n_estimators': [100],
+        'n_estimators': [20,50,70,100],
         'max_depth': [-1, 5, 10],
         'learning_rate': [0.01, 0.1, 0.2],
         'num_leaves': [31, 50, 70],
