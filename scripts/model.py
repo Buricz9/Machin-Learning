@@ -1,13 +1,12 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
-import numpy as np
 
 def optimize_logistic_regression_with_random_search(X_train, y_train):
-    # Definiowanie przestrzeni hiperparametrów dla RandomizedSearchCV
+    # Dyskretna przestrzeń hiperparametrów
     param_dist = {
-        'C': np.logspace(-4, 4, 20),  # Parametr regularyzacyjny C
+        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],  # Dyskretne wartości C
         'solver': ['liblinear', 'lbfgs'],  # Różne algorytmy optymalizacji
-        'penalty': ['l2']  # Tylko l2 dla 'lbfgs', 'liblinear' może obsługiwać 'l1'
+        'penalty': ['l2']  # Tylko l2 dla lbfgs, liblinear obsługuje l1
     }
 
     # Inicjalizacja modelu Logistic Regression
@@ -17,7 +16,7 @@ def optimize_logistic_regression_with_random_search(X_train, y_train):
     random_search = RandomizedSearchCV(
         estimator=model,
         param_distributions=param_dist,
-        n_iter=50,
+        n_iter=10,  # Liczba iteracji – dostosowano dla szybszego działania
         cv=5,
         n_jobs=-1,
         verbose=0,
