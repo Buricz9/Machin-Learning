@@ -1,25 +1,24 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV
-import numpy as np
 
 def train_random_forest_model_with_random_search(X_train, y_train):
-    # Definiowanie siatki parametrów do przeszukiwania dla RandomizedSearchCV
+    # Dyskretny zestaw parametrów zgodny z wcześniejszym wzorcem
     param_dist = {
-        'n_estimators': np.arange(50, 1001, 50),
-        'max_depth': np.arange(10, 51, 5),
-        'min_samples_split': np.arange(2, 21, 2),
-        'min_samples_leaf': np.arange(1, 11, 1),
+        'n_estimators': [20, 50, 70, 100],
+        'max_depth': [-1, 5, 10],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
         'bootstrap': [True, False]
     }
 
     # Inicjalizacja modelu Random Forest
     model = RandomForestClassifier(random_state=42)
 
-    # Inicjalizacja RandomizedSearchCV
+    # RandomizedSearchCV dla optymalizacji hiperparametrów
     random_search = RandomizedSearchCV(
         estimator=model,
         param_distributions=param_dist,
-        n_iter=100,
+        n_iter=10,  # Liczba iteracji dostosowana do liczby kombinacji w `param_dist`
         cv=5,
         n_jobs=-1,
         verbose=1,
