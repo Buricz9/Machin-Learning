@@ -1,11 +1,10 @@
 import optuna
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 def train_random_forest_model_with_optuna(X_train, y_train):
-    # Funkcja celu dla Optuna
     def objective(trial):
-        # Dyskretna przestrzeń hiperparametrów (zgodna z ustalonym wzorcem param_grid)
         param_grid = {
             'n_estimators': trial.suggest_categorical('n_estimators', [20, 50, 70, 100]),
             'max_depth': trial.suggest_categorical('max_depth', [-1, 5, 10]),
@@ -14,7 +13,6 @@ def train_random_forest_model_with_optuna(X_train, y_train):
             'bootstrap': trial.suggest_categorical('bootstrap', [True, False])
         }
 
-        # Inicjalizacja modelu Random Forest
         model = RandomForestClassifier(
             n_estimators=param_grid['n_estimators'],
             max_depth=param_grid['max_depth'] if param_grid['max_depth'] != -1 else None,
@@ -24,18 +22,21 @@ def train_random_forest_model_with_optuna(X_train, y_train):
             random_state=42
         )
 
-        # Ocena modelu za pomocą AUC na zbiorze treningowym
-        auc = roc_auc_score(y_train, model.fit(X_train, y_train).predict_proba(X_train)[:, 1])
-        return auc
+        # Walidacja krzyżowa 5-krotna
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        scores = cross_val_score(model, X_train, y_train, cv=cv, scoring='roc_auc', n_jobs=-1)
+        
+        # Zwracamy średnią wartość AUC z walidacji krzyżowej
+        return scores.mean()
 
-    # Tworzenie obiektu study i optymalizacja
+    # Tworzenie obiektu study z Optuny i optymalizacja
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=50, n_jobs=-1, timeout=600)
 
     # Pobranie najlepszego zestawu hiperparametrów
     best_params = study.best_params
 
-    # Tworzenie modelu na podstawie najlepszych parametrów
+    # Tworzenie modelu na podstawie najlepszych parametrów i trening na całym zbiorze treningowym
     best_model = RandomForestClassifier(
         n_estimators=best_params['n_estimators'],
         max_depth=best_params['max_depth'] if best_params['max_depth'] != -1 else None,
@@ -44,8 +45,6 @@ def train_random_forest_model_with_optuna(X_train, y_train):
         bootstrap=best_params['bootstrap'],
         random_state=42
     )
-    # Trening najlepszego modelu
     best_model.fit(X_train, y_train)
 
-    # Zwrócenie najlepszego modelu i parametrów
     return best_model, best_params
