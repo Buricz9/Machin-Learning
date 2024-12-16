@@ -6,11 +6,11 @@ from sklearn.model_selection import cross_val_score
 def optimize_logistic_regression_with_optuna(X_train, y_train):
     # Funkcja celu dla Optuna
     def objective(trial):
-        # Przestrzeń hiperparametrów
-        C = trial.suggest_loguniform('C', 1e-4, 1e2)  # C z przedziału log-uniform
-        solver = trial.suggest_categorical('solver', ['liblinear', 'lbfgs'])
+        # Dyskretna przestrzeń hiperparametrów
+        C = trial.suggest_categorical('C', [0.0001, 0.001, 0.01, 0.1, 1, 10, 100])  # Dyskretne wartości C
+        solver = trial.suggest_categorical('solver', ['liblinear', 'lbfgs'])  # Solver
         penalty = 'l2' if solver == 'lbfgs' else trial.suggest_categorical('penalty', ['l1', 'l2'])
-        
+
         # Inicjalizacja modelu Logistic Regression
         model = LogisticRegression(C=C, solver=solver, penalty=penalty, random_state=42, max_iter=1000)
 
